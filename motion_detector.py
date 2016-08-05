@@ -8,6 +8,10 @@ import datetime
 import imutils
 import time
 import cv2
+import telegram
+
+
+bot = telegram.Bot(token='TOKEN HERE')
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -29,6 +33,7 @@ firstFrame = None
 
 # loop over the frames of the video
 while True:
+	send = False
 	# grab the current frame and initialize the occupied/unoccupied
 	# text
 	(grabbed, frame) = camera.read()
@@ -64,6 +69,7 @@ while True:
 	for c in cnts:
 		# if the contour is too small, ignore it
 		if cv2.contourArea(c) < args["min_area"]:
+			send = True
 			continue
 
 		# compute the bounding box for the contour, draw it on the frame,
@@ -71,6 +77,12 @@ while True:
 		(x, y, w, h) = cv2.boundingRect(c)
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 		text = "Occupied"
+		if send is True:
+			cv2.imwrite("temp.png", frame)
+			bot.sendPhoto(chat_id=CHATID, photo=open('temp.png', 'rb'))
+
+		send = False
+
 
 	# draw the text and timestamp on the frame
 	cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
@@ -80,8 +92,8 @@ while True:
 
 	# show the frame and record if the user presses a key
 	cv2.imshow("Security Feed", frame)
-	cv2.imshow("Thresh", thresh)
-	cv2.imshow("Frame Delta", frameDelta)
+	#cv2.imshow("Thresh", thresh)
+	#cv2.imshow("Frame Delta", frameDelta)
 	key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key is pressed, break from the lop
