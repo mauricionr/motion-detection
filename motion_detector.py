@@ -9,9 +9,15 @@ import imutils
 import time
 import cv2
 import telegram
+from picamera import PiCamera
+from time import sleep
+
+camera = PiCamera();
 
 
-bot = telegram.Bot(token='TOKEN HERE')
+bot = telegram.Bot(token='231560685:AAECxkBW-logZ2uJmvXKmeVQlg5tuhG1l8o')
+counter = 0
+limit = 500
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -33,6 +39,7 @@ firstFrame = None
 
 # loop over the frames of the video
 while True:
+	counter = counter + 1
 	send = False
 	# grab the current frame and initialize the occupied/unoccupied
 	# text
@@ -45,7 +52,7 @@ while True:
 		break
 
 	# resize the frame, convert it to grayscale, and blur it
-	frame = imutils.resize(frame, width=500)
+	frame = imutils.resize(frame, width=700)
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
@@ -67,38 +74,43 @@ while True:
 
 	# loop over the contours
 	for c in cnts:
+		print "Cnts amount is %d " % len(cnts)
 		# if the contour is too small, ignore it
 		if cv2.contourArea(c) < args["min_area"]:
 			send = True
 			continue
+		else:
+			send = False
 
 		# compute the bounding box for the contour, draw it on the frame,
 		# and update the text
 		(x, y, w, h) = cv2.boundingRect(c)
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 		text = "Occupied"
-		if send is True:
+		if send == True:
+			counter = 0
 			cv2.imwrite("temp.png", frame)
-			bot.sendPhoto(chat_id=CHATID, photo=open('temp.png', 'rb'))
+			print "Sending to bot.. "
+			bot.sendPhoto(chat_id=172344887, photo=open('temp.png', 'rb'))
+		else:
+			print "Counter is %d" % counter
+			print "Not sending..."
 
-		send = False
-
+	print "Room status: {}".format(text)
 
 	# draw the text and timestamp on the frame
-	cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
-		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-	cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
-		(10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+	#cv2.putText(frame, "Room Status: {}".format(text), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+	#cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
 
 	# show the frame and record if the user presses a key
 	cv2.imshow("Security Feed", frame)
-	#cv2.imshow("Thresh", thresh)
-	#cv2.imshow("Frame Delta", frameDelta)
+	cv2.imshow("Thresh", thresh)
+	cv2.imshow("Frame Delta", frameDelta)
 	key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key is pressed, break from the lop
-	if key == ord("q"):
-		break
+	#if key == ord("q"):
+	#	break
 
 # cleanup the camera and close any open windows
 camera.release()
